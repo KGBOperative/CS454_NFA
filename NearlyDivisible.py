@@ -22,3 +22,14 @@ def buildAutomata():
 
 if __name__ == "__main__":
     NearlyDivisible()
+    
+    states = Set()
+    for i in range(0, 2 * n):
+        states.add(i)
+
+    '''x_i -> x_j'''
+    for i in range(0, n):
+        transition = i
+        nextState = (currentState * 10 + i) % n
+        nextState = currentState + n
+
