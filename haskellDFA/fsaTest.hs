@@ -15,16 +15,6 @@ getDFAtrans k [a] (c:cs) =
 getDFAtrans k (a:as) (c:cs) = 
     (getDFAtrans k [a] (c:cs)) `union` (getDFAtrans k as (c:cs))
 
-{-- old, list verion
-getDFAtrans :: Int -> [Int] -> [Int] -> [(Int, Int, [Char])]
-getDFAtrans k [a] [c] = [(a, (a * 10 + c) `mod` k, [intToDigit c])
-                       , (a + k, ((a * 10 + c) `mod` k) + k, [intToDigit c])]
-getDFAtrans k [a] (c:cs) = (a, (a * 10 + c) `mod` k, [intToDigit c])
-                       : (a + k, ((a * 10 + c) `mod` k) + k, [intToDigit c]) 
-                       : (getDFAtrans k [a] cs)
-getDFAtrans k (a:as) (c:cs) = (getDFAtrans k [a] (c:cs)) ++ (getDFAtrans k as (c:cs))
---}
-
 -- create a list of tuples for the dropped digit transitions
 getDropTrans :: Int -> Set ((Int, Int, [Int]))
 getDropTrans a = 
@@ -49,25 +39,29 @@ convertTransSet a =
     else singleton (convertTrans (findMin a)) `union` convertTransSet (deleteMin a)
         where convertTrans (a, b, c) = (a, b, intsToDigits c)
 
+-- equality operator for transitions
+eq :: (Eq a, Eq b) => (a, b, c) -> (a, b, c) -> Bool
+eq (a1, b1, _) (a2, b2, _) = if (a1 == a2) && (b1 == b2) then True else False
+
+-- merge two transitions from and to the same states on differing inputs
+merge :: Ord c => (a, b, Set c) -> (a, b, Set c) -> (a, b, Set c)
+merge (a1, b1, c1) (a2, b2, c2) = (a1, b1, c1 `union` c2)
+
+-- merge all the transitions from q_i to q_j
+mergeTransSet :: Set (Int, Int, Set Char) -> Set (Int, Int, Set Char)
+mergeTransSet a = 
+    if size a == 1 then a
+    else 
+        Data.Set.fold merge q fst p `union` mergeTransSet (snd p)
+        where 
+            q = findMin a
+            p = partition (eq q) a
+
 -- create a list of final accepting states
 getFinals :: Int -> Set Int
 getFinals k = 
     singleton 0 `union` singleton k
 
-{-- combineDelta :: (a, b, [c]) -> (a, b, [c]) -> (a, b, [c])
--- combineDelta (a1, b1, (
--- reduce the number of transitions
-reduceDelta :: [(Int, Int, [Char])] -> [(Int, Int, [Char])]
-reduceDelta [(a, b, (c:cs))] = 
-
--- define NFA as a data type
-data NFA = NFA { states :: [Int]
-               , sigma :: [Char]
-               , delta :: [(Int, Int, [Char])] 
-               , initState :: Int 
-               , finalState :: [Int] 
-               }
---}
 main :: IO()
 main =
-    putStrLn $ showTreeWith False True $ (getDFAtrans 3 [0..2] [0..9]) `union` convertTransSet (getDropTrans 3)
+    putStrLn $ showTreeWith False True $ (getDFAtrans 7 [0..6] [0..9]) `union` convertTransSet (getDropTrans 7)
